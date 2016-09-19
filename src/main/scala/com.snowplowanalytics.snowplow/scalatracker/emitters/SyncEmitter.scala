@@ -13,13 +13,14 @@
 package com.snowplowanalytics.snowplow.scalatracker.emitters
 
 /**
- * Blocking emitter
- *
- * @param host
- * @param port
- * @param https
- */
-class SyncEmitter(host: String, port: Int = 80, https: Boolean = false) extends TEmitter {
+  * Blocking emitter
+  *
+  * @param host
+  * @param port
+  * @param https
+  */
+class SyncEmitter(host: String, port: Int = 80, https: Boolean = false)
+    extends TEmitter {
 
   def input(event: Map[String, String]): Unit = {
     RequestUtils.attemptGet(host, event, port, https)

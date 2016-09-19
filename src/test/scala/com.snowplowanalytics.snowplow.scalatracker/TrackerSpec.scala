@@ -40,8 +40,8 @@ class TrackerSpec extends Specification {
       "iglu:com.snowplowanalytics.snowplow/context1/jsonschema/1-0-0",
       ("number" -> 20)),
     SelfDescribingJson(
-    "iglu:com.snowplowanalytics.snowplow/context1/jsonschema/1-0-0",
-    ("letters" -> List("a", "b", "c"))))
+      "iglu:com.snowplowanalytics.snowplow/context1/jsonschema/1-0-0",
+      ("letters" -> List("a", "b", "c"))))
 
   "trackUnstructEvent" should {
 
@@ -55,7 +55,8 @@ class TrackerSpec extends Specification {
 
       val event = emitter.lastInput
 
-      """[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}""".r.unapplySeq(event("eid")) must beSome
+      """[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}""".r.unapplySeq(
+        event("eid")) must beSome
 
       """\d*""".r.unapplySeq(event("dtm")) must beSome
 
@@ -82,13 +83,14 @@ class TrackerSpec extends Specification {
         .setPlatform(Mobile)
         .setUserId("sabnis")
         .setScreenResolution(200, 300)
-        .setViewport(50,100)
+        .setViewport(50, 100)
         .setColorDepth(24)
         .setTimezone("Europe London")
         .setLang("en")
         .setDomainUserId("17")
         .setIpAddress("255.255.255.255")
-        .setUseragent("Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Firefox/24.0")
+        .setUseragent(
+          "Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Firefox/24.0")
         .setNetworkUserId("id")
 
       tracker.setSubject(subject)
@@ -133,7 +135,10 @@ class TrackerSpec extends Specification {
 
       val tracker = new Tracker(List(emitter), "mytracker", "myapp", false)
 
-      tracker.trackStructEvent("e-commerce", "buy", property=Some("book"), timestamp=Some(1459778142000L)) // Long
+      tracker.trackStructEvent("e-commerce",
+                               "buy",
+                               property = Some("book"),
+                               timestamp = Some(1459778142000L)) // Long
 
       val event = emitter.lastInput
 
@@ -151,7 +156,10 @@ class TrackerSpec extends Specification {
 
       val timestamp = Tracker.TrueTimestamp(1459778542000L)
 
-      tracker.trackStructEvent("e-commerce", "buy", property=Some("book"), timestamp=Some(timestamp))
+      tracker.trackStructEvent("e-commerce",
+                               "buy",
+                               property = Some("book"),
+                               timestamp = Some(timestamp))
 
       val event = emitter.lastInput
 

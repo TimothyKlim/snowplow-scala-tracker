@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) 2013-2015 Snowplow Analytics Ltd. All rights reserved.
  *
  * This program is licensed to you under the Apache License Version 2.0,
@@ -20,15 +20,16 @@ object SnowplowTrackerBuild extends Build {
 
   // Configure prompt to show current project
   override lazy val settings = super.settings :+ {
-    shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
+    shellPrompt := { s =>
+      Project.extract(s).currentProject.id + " > "
+    }
   }
 
   // Define our project, with basic project information and library dependencies
   lazy val project = Project("snowplow-scala-tracker", file("."))
     .settings(buildSettings: _*)
     .settings(
-      libraryDependencies <++= Dependencies.onVersion(
-        all = Seq(
+      libraryDependencies ++= Seq(
         Libraries.commonsLang,
         Libraries.commonsCodec,
         Libraries.jodaTime,
@@ -36,13 +37,12 @@ object SnowplowTrackerBuild extends Build {
         Libraries.jodaMoney,
         Libraries.jackson,
         Libraries.json4sJackson,
-        Libraries.sprayClient,
         Libraries.akka,
+        Libraries.akkaHttp,
+        // Libraries.akkaHttpTest,
         Libraries.mockito,
-        Libraries.sprayTest),
-        on29 = Seq(Libraries.collUtil._29, Libraries.specs2._29),
-        on210 = Seq(Libraries.collUtil._210, Libraries.specs2._210),
-        on211 = Seq(Libraries.collUtil._211, Libraries.specs2._211)
+        Libraries.collUtil,
+        Libraries.specs2
       )
     )
 }

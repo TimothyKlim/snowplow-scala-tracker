@@ -18,26 +18,25 @@ import org.json4s.JsonDSL._
 object SelfDescribingJson {
 
   /**
-   * Create a SelfDescribingJson from the individual components of a schema
-   *
-   * @param protocol schema path protocol
-   * @param vendor schema vendor
-   * @param name schema name
-   * @param format schema format (eg. jsonschema)
-   * @param model model number of SchemaVer
-   * @param revision revision number of SchemaVer
-   * @param addition addition number of SchemaVer
-   * @param data JSON instance
-   */
-  def apply(
-    protocol: String,
-    vendor: String,
-    name: String,
-    format: String,
-    model: Int,
-    revision: Int,
-    addition: Int,
-    data: JValue): SelfDescribingJson = {
+    * Create a SelfDescribingJson from the individual components of a schema
+    *
+    * @param protocol schema path protocol
+    * @param vendor schema vendor
+    * @param name schema name
+    * @param format schema format (eg. jsonschema)
+    * @param model model number of SchemaVer
+    * @param revision revision number of SchemaVer
+    * @param addition addition number of SchemaVer
+    * @param data JSON instance
+    */
+  def apply(protocol: String,
+            vendor: String,
+            name: String,
+            format: String,
+            model: Int,
+            revision: Int,
+            addition: Int,
+            data: JValue): SelfDescribingJson = {
 
     val schema = s"$protocol:$vendor/$name/$format/$model-$revision-$addition"
 
@@ -45,32 +44,33 @@ object SelfDescribingJson {
   }
 
   /**
-   * Convenience method to create an outer unstruct_event self-describing JSON
-   *
-   * @param schema the schema string
-   * @param data Unstructured event self-describing JSOn
-   */
+    * Convenience method to create an outer unstruct_event self-describing JSON
+    *
+    * @param schema the schema string
+    * @param data Unstructured event self-describing JSOn
+    */
   def apply(schema: String, data: SelfDescribingJson): SelfDescribingJson = {
     SelfDescribingJson(schema, data.toJObject)
   }
 
   /**
-   * Convenience method to turn a sequence of contexts into a self-describing JSON
-   *
-   * @param schema the schema string
-   * @param data Sequence of self-describing JSONs representing custom contexts
-   */
-  def apply(schema: String, data: Seq[SelfDescribingJson]): SelfDescribingJson = {
+    * Convenience method to turn a sequence of contexts into a self-describing JSON
+    *
+    * @param schema the schema string
+    * @param data Sequence of self-describing JSONs representing custom contexts
+    */
+  def apply(schema: String,
+            data: Seq[SelfDescribingJson]): SelfDescribingJson = {
     SelfDescribingJson(schema, JArray(data.toList.map(_.toJObject)))
   }
 }
 
 /**
- * JSON representing an unstructured event or a custom context
- *
- * @param schema the schema string
- * @param data JSON instance
- */
+  * JSON representing an unstructured event or a custom context
+  *
+  * @param schema the schema string
+  * @param data JSON instance
+  */
 case class SelfDescribingJson(schema: String, data: JValue) {
   def toJObject(): JObject = ("schema" -> schema) ~ ("data" -> data)
 }

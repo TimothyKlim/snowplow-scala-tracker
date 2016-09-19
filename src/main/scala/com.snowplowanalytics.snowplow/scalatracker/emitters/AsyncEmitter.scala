@@ -15,18 +15,19 @@ package com.snowplowanalytics.snowplow.scalatracker.emitters
 // Java
 import java.util.concurrent.LinkedBlockingQueue
 
-
 object AsyncEmitter {
   // Avoid starting thread in constructor
   /**
-   * Start async emitter with single event payload
-   *
-   * @param host collector host
-   * @param port collector port
-   * @param https should this use the https scheme
-   * @return emitter
-   */
-  def createAndStart(host: String, port: Int = 80, https: Boolean = false): AsyncEmitter = {
+    * Start async emitter with single event payload
+    *
+    * @param host collector host
+    * @param port collector port
+    * @param https should this use the https scheme
+    * @return emitter
+    */
+  def createAndStart(host: String,
+                     port: Int = 80,
+                     https: Boolean = false): AsyncEmitter = {
     val emitter = new AsyncEmitter(host, port, https)
     emitter.startWorker()
     emitter
@@ -34,13 +35,14 @@ object AsyncEmitter {
 }
 
 /**
- * Asynchronous emitter using LinkedBlockingQueue
- *
- * @param host collector host
- * @param port collector port
- * @param https should this use the https scheme
- */
-class AsyncEmitter private(host: String, port: Int, https: Boolean = false) extends TEmitter {
+  * Asynchronous emitter using LinkedBlockingQueue
+  *
+  * @param host collector host
+  * @param port collector port
+  * @param https should this use the https scheme
+  */
+class AsyncEmitter private (host: String, port: Int, https: Boolean = false)
+    extends TEmitter {
 
   val queue = new LinkedBlockingQueue[Map[String, String]]()
 
@@ -49,10 +51,14 @@ class AsyncEmitter private(host: String, port: Int, https: Boolean = false) exte
 
   // TODO: consider move retryGet/PostUntilSuccessful with adding of stm to Emitter (it's not requests logic)
   val worker = new Thread {
-    override def run {
+    override def run(): Unit = {
       while (true) {
         val event = queue.take()
-        RequestUtils.retryGetUntilSuccessful(host, event, port, initialBackoffPeriod, https = https)
+        RequestUtils.retryGetUntilSuccessful(host,
+                                             event,
+                                             port,
+                                             initialBackoffPeriod,
+                                             https = https)
       }
     }
   }
@@ -60,11 +66,11 @@ class AsyncEmitter private(host: String, port: Int, https: Boolean = false) exte
   worker.setDaemon(true)
 
   /**
-   * Method called to send an event from the tracker to the emitter
-   * Adds the event to the queue
-   *
-   * @param event Fully assembled event
-   */
+    * Method called to send an event from the tracker to the emitter
+    * Adds the event to the queue
+    *
+    * @param event Fully assembled event
+    */
   def input(event: Map[String, String]): Unit = {
     queue.put(event)
   }
@@ -73,4 +79,3 @@ class AsyncEmitter private(host: String, port: Int, https: Boolean = false) exte
     worker.start()
   }
 }
-

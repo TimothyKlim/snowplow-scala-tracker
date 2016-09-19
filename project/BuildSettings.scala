@@ -14,24 +14,54 @@ import bintray.BintrayPlugin._
 import bintray.BintrayKeys._
 import sbt._
 import Keys._
+import org.scalafmt.sbt.ScalaFmtPlugin.autoImport._
 
 object BuildSettings {
 
   // Basic settings for our app
   lazy val basicSettings = Seq[Setting[_]](
-    organization          :=  "com.snowplowanalytics",
-    version               :=  "0.3.0",
-    description           :=  "Scala tracker for Snowplow",
-    scalaVersion          :=  "2.10.6",
-    crossScalaVersions    :=  Seq("2.10.6", "2.11.5"),
-    scalacOptions         :=  Seq("-deprecation", "-encoding", "utf8"),
-    resolvers             ++= Dependencies.resolutionRepos
+    organization := "com.snowplowanalytics",
+    version := "0.4.0-kt",
+    description := "Scala tracker for Snowplow",
+    scalaVersion := "2.11.8",
+    scalacOptions := Seq("-encoding",
+                         "UTF-8",
+                         "-target:jvm-1.8",
+                         "-unchecked",
+                         "-deprecation",
+                         "-feature",
+                         "-language:higherKinds",
+                         "-language:existentials",
+                         "-language:postfixOps",
+                         "-Xexperimental",
+                         "-Xlint",
+                         // "-Xfatal-warnings",
+                         "-Xfuture",
+                         "-Ybackend:GenBCode",
+                         "-Ydelambdafy:method",
+                         "-Yno-adapted-args",
+                         "-Yopt-warnings",
+                         "-Yopt:l:classpath",
+                         "-Yopt:unreachable-code" /*,
+                         "-Ywarn-dead-code",
+                         "-Ywarn-infer-any",
+                         "-Ywarn-numeric-widen",
+                         "-Ywarn-unused",
+                         "-Ywarn-unused-import",
+                         "-Ywarn-value-discard"*/ ),
+    resolvers ++= Dependencies.resolutionRepos
   )
 
   // Makes our SBT app settings available from within the ETL
-  lazy val scalifySettings = Seq(sourceGenerators in Compile <+= (sourceManaged in Compile, version, name, organization, scalaVersion) map { (d, v, n, o, sv) =>
-    val file = d / "settings.scala"
-    IO.write(file, """package com.snowplowanalytics.snowplow.scalatracker.generated
+  lazy val scalifySettings = Seq(
+    sourceGenerators in Compile <+= (sourceManaged in Compile,
+                                     version,
+                                     name,
+                                     organization,
+                                     scalaVersion) map { (d, v, n, o, sv) =>
+      val file = d / "settings.scala"
+      IO.write(file,
+               """package com.snowplowanalytics.snowplow.scalatracker.generated
       |object ProjectSettings {
       |  val version = "%s"
       |  val name = "%s"
@@ -39,23 +69,27 @@ object BuildSettings {
       |  val scalaVersion = "%s"
       |}
       |""".stripMargin.format(v, n, o, sv))
-    Seq(file)
-  })
+      Seq(file)
+    })
 
   // Bintray publishing settings
   lazy val publishSettings = bintraySettings ++ Seq[Setting[_]](
-    licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.html")),
-    bintrayOrganization := Some("snowplow"),
-    bintrayRepository := "snowplow-maven"
-  )
+      licenses += ("Apache-2.0", url(
+        "http://www.apache.org/licenses/LICENSE-2.0.html")),
+      bintrayOrganization := Some("fcomb"),
+      bintrayRepository := "maven"
+    )
 
   // Maven Central publishing settings
   lazy val mavenCentralExtras = Seq[Setting[_]](
-    pomIncludeRepository := { x => false },
+    pomIncludeRepository := { x =>
+      false
+    },
     homepage := Some(url("http://snowplowanalytics.com")),
-    scmInfo := Some(ScmInfo(url("https://github.com/snowplow/snowplow-scala-tracker"), "scm:git@github.com:snowplow/snowplow-scala-tracker.git")),
-    pomExtra := (
-      <developers>
+    scmInfo := Some(
+      ScmInfo(url("https://github.com/snowplow/snowplow-scala-tracker"),
+              "scm:git@github.com:snowplow/snowplow-scala-tracker.git")),
+    pomExtra := (<developers>
         <developer>
           <name>Snowplow Analytics Ltd</name>
           <email>support@snowplowanalytics.com</email>
@@ -65,5 +99,5 @@ object BuildSettings {
       </developers>)
   )
 
-  lazy val buildSettings = basicSettings ++ scalifySettings ++ publishSettings ++ mavenCentralExtras
+  lazy val buildSettings = basicSettings ++ reformatOnCompileSettings ++ scalifySettings ++ publishSettings ++ mavenCentralExtras
 }

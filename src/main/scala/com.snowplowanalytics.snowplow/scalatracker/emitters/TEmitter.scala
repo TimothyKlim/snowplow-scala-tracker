@@ -14,14 +14,14 @@ package com.snowplowanalytics.snowplow.scalatracker
 package emitters
 
 /**
- * Emitter trait
- */
+  * Emitter trait
+  */
 trait TEmitter {
 
   /**
-   * Method called to send an event from the tracker to the emitter
-   *
-   * @param event Fully assembled event
-   */
+    * Method called to send an event from the tracker to the emitter
+    *
+    * @param event Fully assembled event
+    */
   def input(event: Map[String, String]): Unit
 }

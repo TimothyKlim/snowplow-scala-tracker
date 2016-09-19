@@ -21,8 +21,8 @@ import org.json4s.jackson.JsonMethods._
 import scala.collection.mutable.{Map => MMap}
 
 /**
- * Contains the map of key-value pairs making up an event
- */
+  * Contains the map of key-value pairs making up an event
+  */
 class Payload {
 
   val Encoding = "UTF-8"
@@ -30,11 +30,11 @@ class Payload {
   val nvPairs = MMap[String, String]()
 
   /**
-   * Add a key-value pair
-   *
-   * @param name parameter name
-   * @param value parameter value
-   */
+    * Add a key-value pair
+    *
+    * @param name parameter name
+    * @param value parameter value
+    */
   def add(name: String, value: String): Unit = {
     if (!name.isEmpty && name != null && !value.isEmpty && value != null) {
       nvPairs += (name -> value)
@@ -42,23 +42,23 @@ class Payload {
   }
 
   /**
-   * Overloaded add function for Option. Don't modify payload for None
-   *
-   * @param name parameter name
-   * @param value optional parameter value
-   */
+    * Overloaded add function for Option. Don't modify payload for None
+    *
+    * @param name parameter name
+    * @param value optional parameter value
+    */
   def add(name: String, value: Option[String]): Unit = {
     value match {
       case Some(v) => add(name, v)
-      case None    =>
+      case None =>
     }
   }
 
   /**
-   * Add a map of key-value pairs one by one
-   *
-   * @param dict
-   */
+    * Add a map of key-value pairs one by one
+    *
+    * @param dict
+    */
   def addDict(dict: Map[String, String]): Unit = {
     dict foreach {
       case (k, v) => add(k, v)
@@ -66,33 +66,34 @@ class Payload {
   }
 
   /**
-   * Stringify a JSON and add it
-   *
-   * @param json
-   * @param encodeBase64 Whether to base 64 encode the JSON
-   * @param typeWhenEncoded Key to use if encodeBase64 is true
-   * @param typeWhenNotEncoded Key to use if encodeBase64 is false
-   */
-  def addJson(
-    json: JObject,
-    encodeBase64: Boolean,
-    typeWhenEncoded: String,
-    typeWhenNotEncoded: String): Unit = {
+    * Stringify a JSON and add it
+    *
+    * @param json
+    * @param encodeBase64 Whether to base 64 encode the JSON
+    * @param typeWhenEncoded Key to use if encodeBase64 is true
+    * @param typeWhenNotEncoded Key to use if encodeBase64 is false
+    */
+  def addJson(json: JObject,
+              encodeBase64: Boolean,
+              typeWhenEncoded: String,
+              typeWhenNotEncoded: String): Unit = {
 
     val jsonString = compact(render(json))
 
     if (encodeBase64) {
-      add(typeWhenEncoded, new String(Base64.encodeBase64(jsonString.getBytes(Encoding)), Encoding))
+      add(typeWhenEncoded,
+          new String(Base64.encodeBase64(jsonString.getBytes(Encoding)),
+                     Encoding))
     } else {
       add(typeWhenNotEncoded, jsonString)
     }
   }
 
   /**
-   * Return the key-value pairs making up the event as an immutable map
-   *
-   * @return Event map
-   */
+    * Return the key-value pairs making up the event as an immutable map
+    *
+    * @return Event map
+    */
   def get(): Map[String, String] = Map(nvPairs.toList: _*)
 
 }

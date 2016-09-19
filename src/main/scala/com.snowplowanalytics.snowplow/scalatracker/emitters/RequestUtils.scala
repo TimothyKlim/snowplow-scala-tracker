@@ -14,26 +14,21 @@ package com.snowplowanalytics.snowplow.scalatracker
 package emitters
 
 // Scala
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
-import scala.concurrent.{
-  Future,
-  Await
-}
+import scala.concurrent.{Future, Await}
 import scala.concurrent.duration._
 
 // Akka
-import akka.io.IO
 import akka.actor.ActorSystem
+import akka.http.scaladsl.marshalling.{Marshal, Marshaller, ToEntityMarshaller}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.util.FastFuture._
+import akka.http.scaladsl._
+import akka.io.IO
 import akka.pattern.ask
+import akka.stream.ActorMaterializer
 import akka.util.Timeout
-
-// Spray
-import spray.http._
-import spray.httpx.marshalling.Marshaller
-import spray.client.pipelining._
-import spray.can.Http
-import spray.util.{ Utils => _, _ }
 
 // json4s
 import org.json4s._
@@ -44,116 +39,138 @@ import org.json4s.jackson.JsonMethods._
 import com.typesafe.config.ConfigFactory
 
 /**
- * Object to hold methods for sending HTTP requests
- */
+  * Object to hold methods for sending HTTP requests
+  */
 object RequestUtils {
   // JSON object with Iglu URI to Schema for payload
-  private val payloadBatchStub: JObject = ("schema", "iglu:com.snowplowanalytics.snowplow/payload_data/jsonschema/1-0-4")
+  private val payloadBatchStub: JObject =
+    ("schema",
+     "iglu:com.snowplowanalytics.snowplow/payload_data/jsonschema/1-0-4")
 
   /**
-   * Transform List of Map[String, String] to JSON array of objects
-   *
-   * @param payload list of string-to-string maps taken from HTTP query
-   * @return JSON array represented as String
-   */
+    * Transform List of Map[String, String] to JSON array of objects
+    *
+    * @param payload list of string-to-string maps taken from HTTP query
+    * @return JSON array represented as String
+    */
   private def postPayload(payload: Seq[Map[String, String]]): String =
-    compact(payloadBatchStub ~ ("data", payload))
+    compact(payloadBatchStub ~ (("data", payload)))
 
   /**
-   * Marshall batch of events to string payload with application/json
-   */
-  implicit val eventsMarshaller = Marshaller.of[Seq[Map[String,String]]](ContentTypes.`application/json`) {
-    (value, ct, ctx) => ctx.marshalTo(HttpEntity(ct, postPayload(value)))
-  }
+    * Marshall batch of events to string payload with application/json
+    */
+  implicit val eventsMarshaller: ToEntityMarshaller[Seq[Map[String, String]]] =
+    Marshaller.withFixedContentType(ContentTypes.`application/json`) { value =>
+      HttpEntity(ContentTypes.`application/json`, postPayload(value))
+    }
 
   implicit val system = ActorSystem(
     generated.ProjectSettings.name,
     ConfigFactory.parseString("akka.daemonic=on"))
-  import system.dispatcher                    // Context for Futures
+
+  implicit val mat = ActorMaterializer()
+
+  import system.dispatcher // Context for Futures
+
   val longTimeout = 5.minutes
+
   implicit val timeout = Timeout(longTimeout)
-  val pipeline: HttpRequest => Future[HttpResponse] = sendReceive
 
   // Close all connections when the application exits
-  Runtime.getRuntime().addShutdownHook(new Thread() {
-    override def run() {
-      shutdown()
-    }
-  })
+  Runtime
+    .getRuntime()
+    .addShutdownHook(new Thread() {
+      override def run(): Unit = {
+        shutdown()
+      }
+    })
 
   /**
-   * Construct GET request with single event payload
-   *
-   * @param host URL host (not header)
-   * @param payload map of event keys
-   * @param port URL port (not header)
-   * @param https should this request use the https scheme
-   * @return HTTP request with event
-   */
-  private[emitters] def constructGetRequest(host: String, payload: Map[String, String], port: Int, https: Boolean = false): HttpRequest = {
+    * Construct GET request with single event payload
+    *
+    * @param host URL host (not header)
+    * @param payload map of event keys
+    * @param port URL port (not header)
+    * @param https should this request use the https scheme
+    * @return HTTP request with event
+    */
+  private[emitters] def constructGetRequest(
+      host: String,
+      payload: Map[String, String],
+      port: Int,
+      https: Boolean = false): HttpRequest = {
     val uri = Uri()
       .withScheme(Uri.httpScheme(https))
       .withPath(Uri.Path("/i"))
       .withAuthority(Uri.Authority(Uri.Host(host), port))
-      .withQuery(payload)
-    Get(uri)
+      .withQuery(Uri.Query(payload))
+    HttpRequest(HttpMethods.GET, uri)
   }
 
   /**
-   * Construct POST request with batch event payload
-   *
-   * @param host URL host (not header)
-   * @param payload list of events
-   * @param port URL port (not header)
-   * @param https should this request use the https scheme
-   * @return HTTP request with event
-   */
-  private[emitters] def constructPostRequest(host: String, payload: Seq[Map[String, String]], port: Int, https: Boolean = false): HttpRequest = {
+    * Construct POST request with batch event payload
+    *
+    * @param host URL host (not header)
+    * @param payload list of events
+    * @param port URL port (not header)
+    * @param https should this request use the https scheme
+    * @return HTTP request with event
+    */
+  private[emitters] def constructPostRequest(
+      host: String,
+      payload: Seq[Map[String, String]],
+      port: Int,
+      https: Boolean = false): Future[HttpRequest] = {
     val uri = Uri()
       .withScheme(Uri.httpScheme(https))
       .withPath(Uri.Path("/com.snowplowanalytics.snowplow/tp2"))
       .withAuthority(Uri.Authority(Uri.Host(host), port))
-    Post(uri, payload)
+    Marshal(payload).to[RequestEntity].fast.map { entity =>
+      HttpRequest(HttpMethods.POST, uri, entity = entity)
+    }
   }
 
   /**
-   * Attempt a GET request once
-   *
-   * @param host collector host
-   * @param payload event map
-   * @param port collector port
-   * @param https should this request use the https scheme
-   * @return Whether the request succeeded
-   */
-  def attemptGet(host: String, payload: Map[String, String], port: Int = 80, https: Boolean = false): Boolean = {
-    val payloadWithStm = payload ++ Map("stm" -> System.currentTimeMillis().toString)
+    * Attempt a GET request once
+    *
+    * @param host collector host
+    * @param payload event map
+    * @param port collector port
+    * @param https should this request use the https scheme
+    * @return Whether the request succeeded
+    */
+  def attemptGet(host: String,
+                 payload: Map[String, String],
+                 port: Int = 80,
+                 https: Boolean = false): Boolean = {
+    val payloadWithStm = payload ++ Map(
+        "stm" -> System.currentTimeMillis().toString)
     val req = constructGetRequest(host, payloadWithStm, port, https)
-    val future = pipeline(req)
+    val future = Http().singleRequest(req)
     val result = Await.ready(future, longTimeout).value.get
     result match {
-      case Success(s) => s.status.isSuccess   // 404 match Success(_) too
+      case Success(s) => s.status.isSuccess // 404 match Success(_) too
       case Failure(_) => false
     }
   }
 
   /**
-   * Attempt a GET request until success or 10th try
-   * Double backoff period after each failed try
-   *
-   * @param host collector host
-   * @param payload event map
-   * @param port collector port
-   * @param backoffPeriod How long to wait after first failed request
-   * @param attempt accumulated value of tries
-   * @param https should this request use the https scheme
-   */
-  def retryGetUntilSuccessful(
-       host: String,
-       payload: Map[String, String],
-       port: Int = 80,
-       backoffPeriod: Long,
-       attempt: Int = 1,
-       https: Boolean = false) {
+    * Attempt a GET request until success or 10th try
+    * Double backoff period after each failed try
+    *
+    * @param host collector host
+    * @param payload event map
+    * @param port collector port
+    * @param backoffPeriod How long to wait after first failed request
+    * @param attempt accumulated value of tries
+    * @param https should this request use the https scheme
+    */
+  def retryGetUntilSuccessful(host: String,
+                              payload: Map[String, String],
+                              port: Int = 80,
+                              backoffPeriod: Long,
+                              attempt: Int = 1,
+                              https: Boolean = false): Unit = {
 
     val getSuccessful = try {
       attemptGet(host, payload, port, https)
@@ -163,49 +180,56 @@ object RequestUtils {
 
     if (!getSuccessful && attempt < 10) {
       Thread.sleep(backoffPeriod)
-      retryGetUntilSuccessful(host, payload, port, backoffPeriod * 2, attempt + 1, https)
+      retryGetUntilSuccessful(host,
+                              payload,
+                              port,
+                              backoffPeriod * 2,
+                              attempt + 1,
+                              https)
     }
   }
 
   /**
-   * Attempt a POST request once
-   *
-   * @param host collector host
-   * @param payload event map
-   * @param port collector port
-   * @param https should this request use the https scheme
-   * @return Whether the request succeeded
-   */
-  def attemptPost(host: String, payload: Seq[Map[String, String]], port: Int = 80, https: Boolean = false): Boolean = {
+    * Attempt a POST request once
+    *
+    * @param host collector host
+    * @param payload event map
+    * @param port collector port
+    * @param https should this request use the https scheme
+    * @return Whether the request succeeded
+    */
+  def attemptPost(host: String,
+                  payload: Seq[Map[String, String]],
+                  port: Int = 80,
+                  https: Boolean = false): Boolean = {
     val stm = System.currentTimeMillis().toString
     val payloadWithStm = payload.map(_ ++ Map("stm" -> stm))
     val req = constructPostRequest(host, payloadWithStm, port, https)
-    val future = pipeline(req)
+    val future = req.flatMap(Http().singleRequest(_))
     val result = Await.ready(future, longTimeout).value.get
     result match {
-      case Success(s) => s.status.isSuccess   // 404 match Success(_) too
+      case Success(s) => s.status.isSuccess // 404 match Success(_) too
       case Failure(_) => false
     }
   }
 
   /**
-   * Attempt a POST request until success or 10th try
-   * Double backoff period after each failed try
-   *
-   * @param host collector host
-   * @param payload event map
-   * @param port collector port
-   * @param backoffPeriod How long to wait after first failed request
-   * @param attempt accumulated value of tries
-   * @param https should this request use the https scheme
-   */
-  def retryPostUntilSuccessful(
-      host: String,
-      payload: Seq[Map[String, String]],
-      port: Int = 80,
-      backoffPeriod: Long,
-      attempt: Int = 1,
-      https: Boolean = false) {
+    * Attempt a POST request until success or 10th try
+    * Double backoff period after each failed try
+    *
+    * @param host collector host
+    * @param payload event map
+    * @param port collector port
+    * @param backoffPeriod How long to wait after first failed request
+    * @param attempt accumulated value of tries
+    * @param https should this request use the https scheme
+    */
+  def retryPostUntilSuccessful(host: String,
+                               payload: Seq[Map[String, String]],
+                               port: Int = 80,
+                               backoffPeriod: Long,
+                               attempt: Int = 1,
+                               https: Boolean = false): Unit = {
 
     val getSuccessful = try {
       attemptPost(host, payload, port, https)
@@ -215,15 +239,19 @@ object RequestUtils {
 
     if (!getSuccessful && attempt < 10) {
       Thread.sleep(backoffPeriod)
-      retryPostUntilSuccessful(host, payload, port, backoffPeriod * 2, attempt + 1, https)
+      retryPostUntilSuccessful(host,
+                               payload,
+                               port,
+                               backoffPeriod * 2,
+                               attempt + 1,
+                               https)
     }
   }
 
   /**
-   * Close the actor system and all connections
-   */
-  def shutdown() {
-    IO(Http).ask(Http.CloseAll)(1.second).await
-    system.shutdown
+    * Close the actor system and all connections
+    */
+  def shutdown(): Unit = {
+    system.terminate()
   }
 }

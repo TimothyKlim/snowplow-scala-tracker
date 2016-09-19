@@ -18,19 +18,21 @@ import java.util.concurrent.LinkedBlockingQueue
 // Scala
 import scala.collection.mutable.ListBuffer
 
-
 object AsyncBatchEmitter {
   // Avoid starting thread in constructor
   /**
-   * Start async emitter with batch event payload
-   *
-   * @param host collector host
-   * @param port collector port
-   * @param bufferSize quantity of events in batch request
-   * @param https should this use the https scheme
-   * @return emitter
-   */
-  def createAndStart(host: String, port: Int = 80, bufferSize: Int = 50, https: Boolean = false): AsyncBatchEmitter = {
+    * Start async emitter with batch event payload
+    *
+    * @param host collector host
+    * @param port collector port
+    * @param bufferSize quantity of events in batch request
+    * @param https should this use the https scheme
+    * @return emitter
+    */
+  def createAndStart(host: String,
+                     port: Int = 80,
+                     bufferSize: Int = 50,
+                     https: Boolean = false): AsyncBatchEmitter = {
     val emitter = new AsyncBatchEmitter(host, port, bufferSize, https = https)
     emitter.startWorker()
     emitter
@@ -38,15 +40,19 @@ object AsyncBatchEmitter {
 }
 
 /**
- * Asynchronous batch emitter
- * Store events in buffer and send them with POST request when buffer exceeds `bufferSize`
- *
- * @param host collector host
- * @param port collector port
- * @param bufferSize quantity of events in a batch request
- * @param https should this use the https scheme
- */
-class AsyncBatchEmitter private(host: String, port: Int, bufferSize: Int, https: Boolean = false) extends TEmitter {
+  * Asynchronous batch emitter
+  * Store events in buffer and send them with POST request when buffer exceeds `bufferSize`
+  *
+  * @param host collector host
+  * @param port collector port
+  * @param bufferSize quantity of events in a batch request
+  * @param https should this use the https scheme
+  */
+class AsyncBatchEmitter private (host: String,
+                                 port: Int,
+                                 bufferSize: Int,
+                                 https: Boolean = false)
+    extends TEmitter {
 
   val queue = new LinkedBlockingQueue[Seq[Map[String, String]]]()
 
@@ -57,10 +63,14 @@ class AsyncBatchEmitter private(host: String, port: Int, bufferSize: Int, https:
 
   // Start consumer thread synchronously trying to send events to collector
   val worker = new Thread {
-    override def run {
+    override def run(): Unit = {
       while (true) {
         val batch = queue.take()
-        RequestUtils.retryPostUntilSuccessful(host, batch, port, initialBackoffPeriod, https = https)
+        RequestUtils.retryPostUntilSuccessful(host,
+                                              batch,
+                                              port,
+                                              initialBackoffPeriod,
+                                              https = https)
       }
     }
   }
@@ -68,11 +78,11 @@ class AsyncBatchEmitter private(host: String, port: Int, bufferSize: Int, https:
   worker.setDaemon(true)
 
   /**
-   * Method called to send an event from the tracker to the emitter
-   * Adds the event to the queue
-   *
-   * @param event Fully assembled event
-   */
+    * Method called to send an event from the tracker to the emitter
+    * Adds the event to the queue
+    *
+    * @param event Fully assembled event
+    */
   def input(event: Map[String, String]): Unit = {
     buffer.append(event)
     if (buffer.size >= bufferSize) {

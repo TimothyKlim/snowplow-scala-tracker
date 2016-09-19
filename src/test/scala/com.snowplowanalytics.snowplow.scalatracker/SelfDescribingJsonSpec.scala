@@ -32,12 +32,10 @@ class SelfDescribingJsonSpec extends Specification {
           "iglu:com.snowplowanalytics.snowplow/my_event/jsonschema/1-0-0",
           ("k1" -> "v1") ~ ("k2" -> "v2")))
 
-      actual.toJObject must_== 
-      ("schema" -> "iglu:com.snowplowanalytics.snowplow/unstruct_event/jsonschema/1-0-0") ~
-      ("data" -> (
-        ("schema" -> "iglu:com.snowplowanalytics.snowplow/my_event/jsonschema/1-0-0") ~
-        ("data" -> (
-          ("k1" -> "v1") ~ ("k2" -> "v2")))))
+      actual.toJObject must_==
+        ("schema" -> "iglu:com.snowplowanalytics.snowplow/unstruct_event/jsonschema/1-0-0") ~
+          ("data" -> (("schema" -> "iglu:com.snowplowanalytics.snowplow/my_event/jsonschema/1-0-0") ~
+            ("data" -> (("k1" -> "v1") ~ ("k2" -> "v2")))))
     }
   }
 
@@ -52,12 +50,11 @@ class SelfDescribingJsonSpec extends Specification {
             "iglu:com.snowplowanalytics.snowplow/my_context/jsonschema/1-0-0",
             ("k1" -> "v1") ~ ("k2" -> "v2"))))
 
-      actual.toJObject must_== 
-      ("schema" -> "iglu:com.snowplowanalytics.snowplow/contexts/jsonschema/1-0-0") ~
-      ("data" -> List(
-        ("schema" -> "iglu:com.snowplowanalytics.snowplow/my_context/jsonschema/1-0-0") ~
-        ("data" -> (
-          ("k1" -> "v1") ~ ("k2" -> "v2")))))
+      actual.toJObject must_==
+        ("schema" -> "iglu:com.snowplowanalytics.snowplow/contexts/jsonschema/1-0-0") ~
+          ("data" -> List(
+            ("schema" -> "iglu:com.snowplowanalytics.snowplow/my_context/jsonschema/1-0-0") ~
+              ("data" -> (("k1" -> "v1") ~ ("k2" -> "v2")))))
     }
   }
 
@@ -65,20 +62,18 @@ class SelfDescribingJsonSpec extends Specification {
 
     "construct a SelfDescribingJson correctly" in {
 
-      val actual = SelfDescribingJson(
-        "iglu",
-        "com.snowplowanalytics.snowplow",
-        "heartbeat",
-        "jsonschema",
-        1,
-        0,
-        0,
-        ("interval" -> 1000))
+      val actual = SelfDescribingJson("iglu",
+                                      "com.snowplowanalytics.snowplow",
+                                      "heartbeat",
+                                      "jsonschema",
+                                      1,
+                                      0,
+                                      0,
+                                      ("interval" -> 1000))
 
       actual.toJObject must_==
         ("schema" -> "iglu:com.snowplowanalytics.snowplow/heartbeat/jsonschema/1-0-0") ~
-        ("data" -> (
-          "interval" -> 1000))
+          ("data" -> ("interval" -> 1000))
 
     }
 
