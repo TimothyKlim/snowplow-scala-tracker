@@ -24,18 +24,18 @@ object Dependencies {
 
   object V {
     // Java
-    val commonsLang = "3.4"
+    val commonsLang = "3.5"
     val commonsCodec = "1.10"
-    val jodaTime = "2.9.4"
+    val jodaTime = "2.9.5"
     val jodaMoney = "0.11"
     val jodaConvert = "1.8.1"
     val jackson = "1.9.13"
 
     // Scala
-    val json4s = "3.4.0"
-    val spray = "1.3.3"
-    val akka = "2.4.10"
-    val collUtil = "6.37.0"
+    val json4s = "3.5.0"
+    val akka = "2.4.12"
+    val akkaHttp = "3.0.0-RC1"
+    val collUtil = "6.38.0"
 
     // Java (test only)
     val mockito = "1.10.19"
@@ -55,7 +55,7 @@ object Dependencies {
 
     // Scala
     val akka = "com.typesafe.akka" %% "akka-actor" % V.akka
-    val akkaHttp = "com.typesafe.akka" %% "akka-http-experimental" % V.akka
+    val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkaHttp
     val json4sJackson = "org.json4s" %% "json4s-jackson" % V.json4s
     val collUtil = "com.twitter" %% "util-collection" % V.collUtil
 

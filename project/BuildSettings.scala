@@ -21,7 +21,7 @@ object BuildSettings {
   // Basic settings for our app
   lazy val basicSettings = Seq[Setting[_]](
     organization := "com.snowplowanalytics",
-    version := "0.4.0-kt",
+    version := "0.4.1-kt",
     description := "Scala tracker for Snowplow",
     scalaVersion := "2.11.8",
     scalacOptions := Seq("-encoding",
@@ -42,13 +42,13 @@ object BuildSettings {
                          "-Yno-adapted-args",
                          "-Yopt-warnings",
                          "-Yopt:l:classpath",
-                         "-Yopt:unreachable-code" /*,
+                         "-Yopt:unreachable-code"/*,
                          "-Ywarn-dead-code",
                          "-Ywarn-infer-any",
                          "-Ywarn-numeric-widen",
                          "-Ywarn-unused",
                          "-Ywarn-unused-import",
-                         "-Ywarn-value-discard"*/ ),
+                         "-Ywarn-value-discard"*/),
     resolvers ++= Dependencies.resolutionRepos
   )
 

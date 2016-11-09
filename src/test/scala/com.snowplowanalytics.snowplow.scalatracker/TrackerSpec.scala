@@ -26,7 +26,7 @@ class TrackerSpec extends Specification {
 
     var lastInput = Map[String, String]()
 
-    def input(event: Map[String, String]) {
+    def input(event: Map[String, String]): Unit = {
       lastInput = event
     }
   }
