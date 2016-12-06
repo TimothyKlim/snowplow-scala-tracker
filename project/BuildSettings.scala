@@ -24,6 +24,7 @@ object BuildSettings {
     version := "0.4.1-kt",
     description := "Scala tracker for Snowplow",
     scalaVersion := "2.11.8",
+    crossScalaVersions := Seq("2.11.8", "2.12.1"),
     scalacOptions := Seq("-encoding",
                          "UTF-8",
                          "-target:jvm-1.8",
@@ -35,31 +36,16 @@ object BuildSettings {
                          "-language:postfixOps",
                          "-Xexperimental",
                          "-Xlint",
-                         // "-Xfatal-warnings",
                          "-Xfuture",
-                         "-Ybackend:GenBCode",
                          "-Ydelambdafy:method",
-                         "-Yno-adapted-args",
-                         "-Yopt-warnings",
-                         "-Yopt:l:classpath",
-                         "-Yopt:unreachable-code"/*,
-                         "-Ywarn-dead-code",
-                         "-Ywarn-infer-any",
-                         "-Ywarn-numeric-widen",
-                         "-Ywarn-unused",
-                         "-Ywarn-unused-import",
-                         "-Ywarn-value-discard"*/),
+                         "-Yno-adapted-args") ++ (if (scalaVersion.value.startsWith("2.11")) Seq("-Ybackend:GenBCode", "-Yopt-warnings", "-Yopt:l:classpath") else Seq("-opt-warnings:_", "-opt:l:classpath")),
     resolvers ++= Dependencies.resolutionRepos
   )
 
   // Makes our SBT app settings available from within the ETL
   lazy val scalifySettings = Seq(
-    sourceGenerators in Compile <+= (sourceManaged in Compile,
-                                     version,
-                                     name,
-                                     organization,
-                                     scalaVersion) map { (d, v, n, o, sv) =>
-      val file = d / "settings.scala"
+    sourceGenerators in Compile += Def.task {
+      val file = (sourceManaged in Compile).value / "settings.scala"
       IO.write(file,
                """package com.snowplowanalytics.snowplow.scalatracker.generated
       |object ProjectSettings {
@@ -68,9 +54,9 @@ object BuildSettings {
       |  val organization = "%s"
       |  val scalaVersion = "%s"
       |}
-      |""".stripMargin.format(v, n, o, sv))
+      |""".stripMargin.format(version.value, name.value, organization.value, scalaVersion.value))
       Seq(file)
-    })
+    }.taskValue)
 
   // Bintray publishing settings
   lazy val publishSettings = bintraySettings ++ Seq[Setting[_]](
@@ -99,5 +85,5 @@ object BuildSettings {
       </developers>)
   )
 
-  lazy val buildSettings = basicSettings ++ reformatOnCompileSettings ++ scalifySettings ++ publishSettings ++ mavenCentralExtras
+  lazy val buildSettings = basicSettings /*++ reformatOnCompileSettings*/ ++ scalifySettings ++ publishSettings ++ mavenCentralExtras
 }

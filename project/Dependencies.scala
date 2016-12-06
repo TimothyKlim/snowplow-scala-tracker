@@ -33,15 +33,12 @@ object Dependencies {
 
     // Scala
     val json4s = "3.5.0"
-    val akka = "2.4.12"
-    val akkaHttp = "3.0.0-RC1"
-    val collUtil = "6.38.0"
+    val akka = "2.4.14"
+    val akkaHttp = "10.0.0"
+    val collUtil = "6.39.0"
 
     // Java (test only)
     val mockito = "1.10.19"
-
-    // Scala (test only)
-    val specs2 = "3.7"
   }
 
   object Libraries {
@@ -60,10 +57,9 @@ object Dependencies {
     val collUtil = "com.twitter" %% "util-collection" % V.collUtil
 
     // Java (test only)
-    val mockito = "org.mockito" % "mockito-all" % V.mockito % "test"
+    val mockito = "org.mockito" % "mockito-all" % V.mockito % Test
 
     // Scala (test only)
-    val specs2 = "org.specs2" %% "specs2" % V.specs2 % "test"
-    // val akkaHttpTest = "com.typesafe.akka" %% "akka-http-testkit" % V.akka % "test"
+    // val akkaHttpTest = "com.typesafe.akka" %% "akka-http-testkit" % V.akka % Test
   }
 }
